@@ -1,0 +1,190 @@
+// ---------- LOOK-UP ENUMS ----------
+Enum transaction_type {
+  INFLOW
+  OUTFLOW
+}
+
+Enum milestone_status {
+  PLANNED
+  IN_PROGRESS
+  ACHIEVED
+  CANCELLED
+}
+
+Enum import_status {
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+Enum audit_action {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+}
+
+// ---------- CORE ORG HIERARCHY ----------
+Table holdings {
+  id            serial [pk]
+  name          varchar(255)
+  created_at    timestamptz
+  updated_at    timestamptz
+}
+
+Table companies {
+  id            serial [pk]
+  holding_id    int  [not null, ref: > holdings.id]
+  name          varchar(255)
+  base_currency char(3)        // ISO-4217 (e.g. “EUR”)
+  created_at    timestamptz
+  updated_at    timestamptz
+}
+
+Table projects {
+  id            serial [pk]
+  company_id    int  [not null, ref: > companies.id]
+  code          varchar(50)    // short human code
+  name          varchar(255)
+  start_date    date
+  end_date      date
+  status        varchar(50)    // e.g. “Active”, “On-Hold”
+  created_at    timestamptz
+  updated_at    timestamptz
+}
+
+// ---------- CHART OF ACCOUNTS / CATEGORIES ----------
+Table categories {
+  id            serial [pk]
+  parent_id     int  [ref: > categories.id] // self-ref for tree
+  name          varchar(255)
+  t_type        transaction_type
+  sort_order    int
+  is_active     boolean
+  created_at    timestamptz
+  updated_at    timestamptz
+}
+
+// ---------- PROJECT MILESTONES ----------
+Table milestones {
+  id            serial [pk]
+  project_id    int  [not null, ref: > projects.id]
+  name          varchar(255)
+  description   text
+  due_date      date
+  planned_amt   numeric(18,2)
+  status        milestone_status
+  created_at    timestamptz
+  updated_at    timestamptz
+}
+
+// ---------- TRANSACTIONS ----------
+Table transactions {
+  id            serial [pk]
+  company_id    int   [not null, ref: > companies.id]
+  project_id    int   [ref: > projects.id]
+  category_id   int   [not null, ref: > categories.id]
+  milestone_id  int   [ref: > milestones.id]
+  import_id     int   [ref: > spreadsheet_imports.id]
+  txn_date      date
+  amount        numeric(18,2)
+  currency      char(3)
+  description   text
+  created_at    timestamptz
+  updated_at    timestamptz
+
+  Indexes {
+    (company_id, txn_date)
+    (project_id, txn_date)
+  }
+}
+
+// ---------- SPREADSHEET IMPORT PIPELINE ----------
+Table spreadsheet_imports {
+  id            serial [pk]
+  project_id    int   [ref: > projects.id]
+  uploaded_by   int   [not null, ref: > users.id]
+  filename      varchar(255)
+  status        import_status
+  uploaded_at   timestamptz
+  processed_at  timestamptz
+}
+
+Table import_errors {
+  id            serial [pk]
+  import_id     int   [not null, ref: > spreadsheet_imports.id]
+  row_number    int
+  column_name   varchar(100)
+  error_msg     text
+  created_at    timestamptz
+}
+
+// ---------- USERS & RBAC ----------
+Table users {
+  id            serial [pk]
+  email         varchar(255) [unique, not null]
+  password_hash varchar(255)
+  first_name    varchar(100)
+  last_name     varchar(100)
+  is_active     boolean
+  created_at    timestamptz
+  updated_at    timestamptz
+}
+
+Table roles {
+  id            serial [pk]
+  name          varchar(100)  // e.g. “Admin”, “Controller”
+  description   text
+}
+
+Table permissions {
+  id            serial [pk]
+  code          varchar(100)  // e.g. “TXN_READ”
+  description   text
+}
+
+Table role_permissions {
+  role_id       int [not null, ref: > roles.id]
+  permission_id int [not null, ref: > permissions.id]
+
+  Indexes {
+    (role_id, permission_id) [pk]
+  }
+}
+
+// scoped access: a user can have different roles per company or per project
+Table user_roles {
+  user_id       int [not null, ref: > users.id]
+  role_id       int [not null, ref: > roles.id]
+  company_id    int [ref: > companies.id]
+  project_id    int [ref: > projects.id]
+
+  Indexes {
+    (user_id, role_id, company_id, project_id) [pk]
+  }
+}
+
+// ---------- AUDIT TRAIL ----------
+Table audit_logs {
+  id            serial [pk]
+  user_id       int [ref: > users.id]
+  entity_type   varchar(100)  // table name
+  entity_id     int
+  action        audit_action
+  diff          jsonb         // before/after snapshot
+  created_at    timestamptz
+}
+
+// ---------- FX (optional but handy) ----------
+Table exchange_rates {
+  id                  serial [pk]
+  base_currency       char(3)
+  target_currency     char(3)
+  rate                numeric(18,6)
+  rate_date           date
+
+  Indexes {
+    (base_currency, target_currency, rate_date) [unique]
+  }
+}
