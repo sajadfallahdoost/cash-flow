@@ -10,7 +10,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ("company", "project", "category", "txn_date", "amount", "currency")
+    list_display = ("company", "project", "category", "import_ref", "txn_date", "amount", "currency")
     list_filter = ("currency", "company", "project", "txn_date")
     search_fields = ("description",)
     date_hierarchy = "txn_date"
