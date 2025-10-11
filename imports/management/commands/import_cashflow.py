@@ -184,4 +184,6 @@ class Command(BaseCommand):
         ))
 
 # python manage.py import_cashflow F:/cash flow/v0/Cash Flow - 20250521.xlsx --user-id 1
+# python manage.py import_cashflow "docs/csv_import/Cash Flow-budgeted.xlsx" --user-id 1
+# python manage.py import_cashflow "docs/csv_import/Cash Flow-Actual.xlsx" --user-id 1
 # python manage.py import_cashflow "docs/csv_import/Cash Flow - 20250521.xlsx" --user-id 1

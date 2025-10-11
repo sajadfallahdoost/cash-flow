@@ -13,7 +13,7 @@ SECRET_KEY = 'django-insecure-hh$1++k!y$+fmfz4%nh9y0aekb^xvyb+m!q02=qf#qj8&&mxnj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -26,6 +26,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
+    'rest_framework',
+    'drf_spectacular',
 
     # Your core/common/shared utilities
     'commons',
@@ -39,17 +42,41 @@ INSTALLED_APPS = [
     'imports',         # depends on accounts, projects
     'audit',           # depends on accounts
     'fx',              # standalone
+
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:5173",
+#     "http://localhost:3000",
+#     "http://127.0.0.1:8000",
+#     "http://10.121.134.187:8000",
+#     "http://10.121.134.1:8000",
+#     "http://10.121.134.1:5173",
+#     "http://10.121.134.187",
+# ]
+CORS_ALLOW_CREDENTIALS = True
+# If you submit POST/PUT from these origins with CSRF protection on:
+# CSRF_TRUSTED_ORIGINS = [
+#     "http://localhost:5173",
+#     "http://localhost:3000",
+#     "http://127.0.0.1:8000",
+#     "http://10.121.134.187:8000",
+#     "http://10.121.134.1:8000",
+#     "http://10.121.134.1:5173",
+#     "http://10.121.134.187",
+# ]
 
 ROOT_URLCONF = 'kernel.urls'
 
@@ -124,3 +151,30 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "accounts.User"
+
+REST_FRAMEWORK = {
+    # IMPORTANT: tell DRF to use Spectacular’s schema generator
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
+    # (optional but common)
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        # add JWT here if you use it
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 25,
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Cash Flow API',
+    'DESCRIPTION': 'Multi-company cash flow with projects, milestones, and transactions.',
+    'VERSION': '1.0.0',
+    # nice-to-haves:
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'COMPONENT_NO_READ_ONLY_REQUIRED': True,
+}
